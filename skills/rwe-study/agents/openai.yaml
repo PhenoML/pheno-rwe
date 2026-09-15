@@ -1,0 +1,4 @@
+interface:
+  display_name: "RWE Study"
+  short_description: "Plan and run traceable comparative RWE studies"
+  default_prompt: "Use $rwe-study to design and execute a traceable real-world-evidence study."

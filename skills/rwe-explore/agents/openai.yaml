@@ -1,0 +1,4 @@
+interface:
+  display_name: "RWE Explore"
+  short_description: "Explore cohorts with guarded descriptive analyses"
+  default_prompt: "Use $rwe-explore to explore this cohort without making causal claims."

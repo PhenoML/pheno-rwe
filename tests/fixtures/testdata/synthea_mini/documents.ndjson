@@ -1,0 +1,1 @@
+{"resourceType":"DocumentReference","id":"d1","subject":{"reference":"Patient/p1"},"status":"current","content":[{"attachment":{"contentType":"text/plain","data":"UGF0aWVudCBoYXMgaHlwZXJ0ZW5zaW9uLg=="}}]}
