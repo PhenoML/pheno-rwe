@@ -176,6 +176,16 @@ def _failure(ctx: typer.Context, message: str, *, code: int, details: Any = None
     raise typer.Exit(code=code)
 
 
+def _parse_key_values(pairs: list[str]) -> dict[str, str]:
+    params: dict[str, str] = {}
+    for pair in pairs:
+        key, separator, value = pair.partition("=")
+        if not separator or not key:
+            raise ValueError(f"Invalid --param {pair!r}; expected key=value.")
+        params[key] = value
+    return params
+
+
 @app.command("init")
 def init_command(
     ctx: typer.Context,
@@ -207,7 +217,16 @@ def ingest(
 @app.command()
 def pull(
     ctx: typer.Context,
-    cohort: str = typer.Option(..., "--cohort", help="Natural-language cohort definition."),
+    cohort: str | None = typer.Option(
+        None, "--cohort", help="Natural-language cohort definition."
+    ),
+    patients: Annotated[
+        Path | None,
+        typer.Option(
+            "--patients",
+            help="File of newline/whitespace-delimited patient IDs to fetch directly.",
+        ),
+    ] = None,
     provider: str | None = typer.Option(None, "--provider", help="PhenoML FHIR provider ID."),
     yes: bool = typer.Option(
         False, "--yes", "-y", help="Approve displayed FHIR queries non-interactively."
@@ -223,7 +242,7 @@ def pull(
     ),
 ) -> None:
     from pheno_rwe.client import build_transport
-    from pheno_rwe.steps.pull import preview_live_cohort, pull_live_cohort
+    from pheno_rwe.steps.pull import preview_from_ids, preview_live_cohort, pull_live_cohort
 
     workspace = _workspace(ctx)
     study_env = workspace.root / ".env"
@@ -231,24 +250,49 @@ def pull(
     provider_id = provider or settings.require_fhir_provider()
     transport = build_transport(settings, max_rps=max_rps)
     try:
-        preview = preview_live_cohort(transport, cohort, provider_id, queries_only=queries_only)
-        if queries_only:
-            _render(
-                ctx,
-                {
-                    "queries": preview.queries,
-                    "patient_count": len(preview.patient_ids),
-                    "patient_ids": [],
-                },
+        if (cohort is None) == (patients is None):
+            raise ValueError("Provide exactly one of --cohort or --patients.")
+        if queries_only and patients is not None:
+            raise ValueError("--queries-only is only valid with --cohort.")
+        if patients is not None:
+            try:
+                raw_ids = patients.read_text(encoding="utf-8")
+            except OSError as exc:
+                raise ValueError(f"Could not read patient IDs from {patients}: {exc}") from exc
+            ids = list(dict.fromkeys(raw_ids.split()))
+            if not ids:
+                raise ValueError(f"No patient IDs found in {patients}.")
+            preview = preview_from_ids(ids)
+            text = f"explicit:{patients}"
+        else:
+            assert cohort is not None
+            preview = preview_live_cohort(
+                transport, cohort, provider_id, queries_only=queries_only
             )
-            return
+            text = cohort
+            if queries_only:
+                _render(
+                    ctx,
+                    {
+                        "queries": preview.queries,
+                        "patient_count": len(preview.patient_ids),
+                        "patient_ids": [],
+                    },
+                )
+                return
         if _state(ctx).json_output and not yes:
             raise ValueError(
                 "JSON pull execution requires --yes; use --queries-only to preview queries."
             )
         if not _state(ctx).json_output:
-            console.print("[bold]Derived FHIR queries[/bold]")
-            console.print_json(json.dumps(preview.queries, default=str))
+            if patients is None:
+                console.print("[bold]Derived FHIR queries[/bold]")
+                console.print_json(json.dumps(preview.queries, default=str))
+            else:
+                console.print(
+                    f"[bold]Explicit patient set[/bold] "
+                    f"({len(preview.patient_ids)} patients from {patients})"
+                )
         approved = yes or typer.confirm(
             f"Fetch $everything for {len(preview.patient_ids)} patients?"
         )
@@ -260,7 +304,7 @@ def pull(
             pull_live_cohort,
             workspace,
             transport,
-            text=cohort,
+            text=text,
             provider_id=provider_id,
             approved=True,
             preview=preview,
@@ -268,6 +312,85 @@ def pull(
         )
     except (PhenoRWEError, ValueError, RuntimeError) as exc:
         _failure(ctx, str(exc), code=1)
+
+
+@app.command("extract-codes")
+def extract_codes_command(
+    ctx: typer.Context,
+    text: Annotated[str, typer.Argument(help="Clinical concept to resolve to source codes.")],
+    domain: str | None = typer.Option(None, "--domain", help="Optional OMOP domain hint."),
+    max_rps: float | None = typer.Option(
+        None,
+        "--max-rps",
+        min=0.01,
+        help="Override the configured PhenoML request rate.",
+    ),
+) -> None:
+    from pheno_rwe.client import build_transport
+    from pheno_rwe.steps.discover import extract_codes
+
+    workspace = _workspace(ctx)
+    settings = Settings.from_env(workspace.root / ".env")
+    transport = build_transport(settings, max_rps=max_rps)
+    _run(ctx, extract_codes, transport, text, domain)
+
+
+@app.command()
+def crosswalk(
+    ctx: typer.Context,
+    system: str = typer.Option(..., "--system", help="Source code system URI."),
+    code: str = typer.Option(..., "--code", help="Source code value."),
+    to: list[str] = typer.Option(
+        ..., "--to", help="Target system URI; repeat for multiple targets."
+    ),
+    max_rps: float | None = typer.Option(
+        None,
+        "--max-rps",
+        min=0.01,
+        help="Override the configured PhenoML request rate.",
+    ),
+) -> None:
+    from pheno_rwe.client import build_transport
+    from pheno_rwe.steps.discover import crosswalk_code
+
+    workspace = _workspace(ctx)
+    settings = Settings.from_env(workspace.root / ".env")
+    transport = build_transport(settings, max_rps=max_rps)
+    _run(ctx, crosswalk_code, transport, system=system, code=code, targets=to)
+
+
+@app.command("fhir-search")
+def fhir_search_command(
+    ctx: typer.Context,
+    path: Annotated[str, typer.Argument(help="FHIR resource type or search path, e.g. Patient.")],
+    param: list[str] = typer.Option(
+        [], "--param", help="Repeatable FHIR search parameter as key=value."
+    ),
+    count: bool = typer.Option(False, "--count", help="Return only the match count."),
+    patients: bool = typer.Option(
+        False, "--patients", help="Collect distinct patient IDs across all pages."
+    ),
+    provider: str | None = typer.Option(None, "--provider", help="PhenoML FHIR provider ID."),
+    max_rps: float | None = typer.Option(
+        None,
+        "--max-rps",
+        min=0.01,
+        help="Override the configured PhenoML request rate.",
+    ),
+) -> None:
+    from pheno_rwe.client import build_transport
+    from pheno_rwe.steps.discover import search_fhir
+
+    workspace = _workspace(ctx)
+    settings = Settings.from_env(workspace.root / ".env")
+    provider_id = provider or settings.require_fhir_provider()
+    transport = build_transport(settings, max_rps=max_rps)
+    try:
+        params = _parse_key_values(param)
+    except ValueError as exc:
+        _failure(ctx, str(exc), code=1)
+        return
+    _run(ctx, search_fhir, transport, provider_id, path, params, count=count, patients=patients)
 
 
 @app.command()

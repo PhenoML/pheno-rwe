@@ -1,0 +1,4 @@
+interface:
+  display_name: "RWE Discover"
+  short_description: "Build a patient retrieval set for pull via discovery primitives"
+  default_prompt: "Use $rwe-discover to build a precise patient set before pulling FHIR data."
