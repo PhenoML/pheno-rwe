@@ -5,6 +5,7 @@ from typing import Any
 
 from typer.testing import CliRunner
 
+from pheno_rwe import __version__
 from pheno_rwe.cli import app
 from pheno_rwe.hashing import canonical_json
 from pheno_rwe.manifest import read_manifest
@@ -13,6 +14,20 @@ from pheno_rwe.steps.common import StepResult
 from pheno_rwe.steps.pull import PullPreview
 from pheno_rwe.steps.resolve_codes import resolve_code_set
 from pheno_rwe.workspace import create_study
+
+
+def test_version_flag_prints_version_standalone() -> None:
+    result = CliRunner().invoke(app, ["--version"])
+
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == __version__
+
+
+def test_version_flag_short_circuits_before_subcommand() -> None:
+    result = CliRunner().invoke(app, ["status", "--version"])
+
+    assert result.exit_code == 0, result.output
+    assert result.output.strip() == __version__
 
 
 def test_global_options_work_before_or_after_subcommand(tmp_path) -> None:

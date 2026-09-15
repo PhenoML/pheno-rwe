@@ -21,7 +21,9 @@ export produced by `pheno-rwe export`.
 
 ## Prerequisites
 
-Install the development dependencies and make the bare CLI command available to OpenCode:
+Install the development dependencies and make the bare CLI command available to OpenCode. The
+repository pins Python 3.11 via `.python-version`, so uv reuses one interpreter rather than
+re-syncing between runs:
 
 ```bash
 uv sync --all-extras --dev

@@ -73,6 +73,12 @@ console = Console()
 err_console = Console(stderr=True)
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        console.print(__version__)
+        raise typer.Exit()
+
+
 class State:
     study: Path | None = None
     force: bool = False
@@ -94,11 +100,16 @@ def main(
         False, "--dry-run", help="Describe writes without committing where supported."
     ),
     json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON."),
-    version: bool = typer.Option(False, "--version", help="Show the package version and exit."),
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            help="Show the package version and exit.",
+            callback=_version_callback,
+            is_eager=True,
+        ),
+    ] = False,
 ) -> None:
-    if version:
-        console.print(__version__)
-        raise typer.Exit()
     state = State()
     state.study = study
     state.force = force
