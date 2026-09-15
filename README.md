@@ -16,13 +16,32 @@ pip install "pheno-rwe[analysis,phenoml]"
 pheno-rwe --help
 ```
 
-For development:
+For development, install with [uv](https://docs.astral.sh/uv/). The repository pins Python 3.11
+via `.python-version` (matching CI), so uv provisions and reuses a single 3.11 interpreter instead
+of recreating the environment:
 
 ```bash
 uv sync --all-extras --dev
 uv run pheno-rwe --help
 uv run pytest
 ```
+
+`uv run` re-checks the environment on every call. After the first `uv sync` that check is a fast
+no-op, but you can skip it entirely by activating the virtualenv once and calling the console
+script directly:
+
+```bash
+source .venv/bin/activate
+pheno-rwe --help
+pytest
+```
+
+Equivalently, pass `uv run --no-sync …` (or set `UV_NO_SYNC=1`) to run without touching
+dependencies. For a reproducible install straight from the lockfile, use
+`uv sync --frozen --all-extras --dev` as CI does.
+
+Common tasks have `make` shortcuts: `make install`, `make format`, `make test`, and `make check`
+(lint, format check, type-check, and tests — the same gate CI runs).
 
 ## Study pipeline
 
@@ -31,13 +50,17 @@ init → pull|ingest → enrich? → resolve-codes → materialize
      → resolve-cohort → deid → validate → analyze → plot → export
 ```
 
-Create and inspect a local study:
+Create and inspect a local study. `init`, `ingest`, and `status` run offline, and the repository
+ships a small synthetic FHIR fixture you can ingest right away:
 
 ```bash
 pheno-rwe init studies/diabetes --name "Diabetes treatment study"
-pheno-rwe --study studies/diabetes ingest data/ndjson
-pheno-rwe --study studies/diabetes status --check-env
+pheno-rwe --study studies/diabetes ingest tests/fixtures/testdata/synthea_mini
+pheno-rwe --study studies/diabetes status
 ```
+
+The remaining pipeline steps call PhenoML and require credentials (see
+[Authentication](#authentication)).
 
 Live FHIR is always mediated by PhenoML. The CLI displays the derived FHIR queries and requires
 confirmation before fetching per-patient `$everything` bundles:
