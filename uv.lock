@@ -884,7 +884,7 @@ requires-dist = [
     { name = "lifelines", marker = "extra == 'analysis'", specifier = ">=0.29,<1" },
     { name = "matplotlib", marker = "extra == 'analysis'", specifier = ">=3.8,<4" },
     { name = "pandas", specifier = ">=2.1,<3" },
-    { name = "phenoml", marker = "extra == 'phenoml'", specifier = ">=16.8,<17" },
+    { name = "phenoml", marker = "extra == 'phenoml'", specifier = ">=17,<18" },
     { name = "pydantic", specifier = ">=2.7,<3" },
     { name = "python-dotenv", specifier = ">=1,<2" },
     { name = "rich", specifier = ">=13.7,<15" },
@@ -908,7 +908,7 @@ dev = [
 
 [[package]]
 name = "phenoml"
-version = "16.8.0"
+version = "17.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -916,9 +916,9 @@ dependencies = [
     { name = "pydantic-core" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/c5/7f0f0a319ea241603d19084e187b0f8e66879902d859c078ece4c40a6cf3/phenoml-16.8.0.tar.gz", hash = "sha256:5befde2ecce3a543d501609fcc7559bcc5f42730e3e98398becfec04f1b7ffc7", size = 225983, upload-time = "2026-07-29T17:27:58.832Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e3/88/16c6eb7564655fc5ef8da821efda4560a1027394057f27a463cdfb3dc7f2/phenoml-17.0.0.tar.gz", hash = "sha256:7d41134e073bfa2d4ca79b02dc84efb6cafdc66b6680087c556d30230dbc3b2a", size = 261892, upload-time = "2026-09-09T17:38:52.595Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/18/ef/96168017c5c7b4131255428b5b63093b6a60863265bc0bdfa21858d00659/phenoml-16.8.0-py3-none-any.whl", hash = "sha256:65a82b6de0102c492438a63195b8aa78cd8dca76736797d71f70d2e092c5eb01", size = 406883, upload-time = "2026-07-29T17:27:57.469Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/e2/b87f67e3587c40f7e3800cabf9a765c5a192ede0e9a43100509d6f1e5ad0/phenoml-17.0.0-py3-none-any.whl", hash = "sha256:523039528072b45b7cd5242055aa244037e163fd4f5549547274a75e82181249", size = 460448, upload-time = "2026-09-09T17:38:50.994Z" },
 ]
 
 [[package]]

@@ -6,7 +6,7 @@ import base64
 import math
 import threading
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
@@ -31,6 +31,8 @@ class PhenoTransport(Protocol):
     def document(self, content: bytes, mime_type: str, **options: Any) -> Any: ...
 
     def resolve_codings(self, text: str, domain: str | None = None) -> Any: ...
+
+    def crosswalk(self, system: str, code: str, targets: Sequence[str]) -> Any: ...
 
 
 def _utcnow() -> datetime:
@@ -321,6 +323,9 @@ class AuditedTransport:
     def resolve_codings(self, text: str, domain: str | None = None) -> Any:
         return self._invoke("/construe/codes/extract", "resolve_codings", text, domain)
 
+    def crosswalk(self, system: str, code: str, targets: Sequence[str]) -> Any:
+        return self._invoke("/construe/codes/crosswalk", "crosswalk", system, code, targets)
+
     def manifest_calls(self) -> list[dict[str, Any]]:
         with self._calls_lock:
             calls = list(self.calls)
@@ -443,6 +448,15 @@ class SDKTransport:
         # Construe. The fhir2omop probe remains authoritative for concept IDs.
         del domain
         return self._response(self.client.construe.codes.with_raw_response.extract(text=text))
+
+    def crosswalk(self, system: str, code: str, targets: Sequence[str]) -> Any:
+        return self._response(
+            self.client.construe.codes.with_raw_response.crosswalk(
+                system=system,
+                code=code,
+                targets=list(targets),
+            )
+        )
 
 
 def build_transport(

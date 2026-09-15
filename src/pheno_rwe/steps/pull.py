@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlsplit
 
 from pheno_rwe.client import AuditedTransport, PhenoTransport
 from pheno_rwe.hashing import canonical_json, hash_file, hash_json
@@ -47,6 +48,12 @@ def preview_live_cohort(
     return PullPreview(patient_ids[:1000], list(queries), data)
 
 
+def preview_from_ids(ids: Iterable[str]) -> PullPreview:
+    """Build a pull preview from an explicit patient-ID set (no cohort-service call)."""
+
+    return PullPreview(patient_ids=list(ids))
+
+
 def _strip_narrative(value: Any) -> Any:
     if isinstance(value, dict):
         return {key: _strip_narrative(item) for key, item in value.items() if key != "text"}
@@ -65,6 +72,17 @@ def _next_link(bundle: dict[str, Any]) -> str | None:
         if link.get("relation") == "next":
             return link.get("url")
     return None
+
+
+def _next_page_params(next_url: str) -> dict[str, str]:
+    """Query parameters to re-issue against the original path for the next page.
+
+    FHIR servers return absolute ``next`` links (for example Medplum's
+    ``.../Patient?_count=20&_offset=20``). The PhenoML proxy resolves a base-relative
+    path plus query parameters, not an absolute URL, so forward only the next page's
+    query and re-issue it against the same resource path as the first page.
+    """
+    return dict(parse_qsl(urlsplit(next_url).query, keep_blank_values=True))
 
 
 def pull_live_cohort(
@@ -122,9 +140,8 @@ def pull_live_cohort(
                 outputs[workspace.relative(target)] = hash_file(target)
                 continue
             try:
-                first = to_data(
-                    transport.fhir_search(provider_id, f"Patient/{patient_id}/$everything")
-                )
+                everything_path = f"Patient/{patient_id}/$everything"
+                first = to_data(transport.fhir_search(provider_id, everything_path))
                 if not isinstance(first, dict):
                     raise TypeError("FHIR proxy did not return a Bundle object")
                 bundle = {"resourceType": "Bundle", "type": "collection", "entry": []}
@@ -134,7 +151,12 @@ def pull_live_cohort(
                     next_url = _next_link(page)
                     if not next_url:
                         break
-                    page_value = to_data(transport.fhir_search(provider_id, next_url))
+                    next_params = _next_page_params(next_url)
+                    if not next_params:
+                        break
+                    page_value = to_data(
+                        transport.fhir_search(provider_id, everything_path, **next_params)
+                    )
                     if not isinstance(page_value, dict):
                         break
                     page = page_value
