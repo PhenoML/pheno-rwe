@@ -25,6 +25,9 @@ studies/
 **/.pheno-rwe.lock
 .context/
 
+# Locally generated OpenCode skills and runtime files.
+.opencode/
+
 # Local browser and macOS application code is intentionally outside the CLI-only repository.
 webui/
 src/pheno_rwe/chat/

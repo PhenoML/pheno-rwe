@@ -126,6 +126,9 @@ Portable skills live in [`skills/rwe-study`](skills/rwe-study/SKILL.md) and
 directory used by Claude Code, Codex, or another compatible coding agent. Agents that consume
 repository instructions can use [`AGENTS.md`](AGENTS.md) directly.
 
+For project-local OpenCode discovery and the synthetic networked smoke-test workflow, see
+[`docs/testing-with-opencode.md`](docs/testing-with-opencode.md).
+
 ## Authentication
 
 Copy `.env.example` to a local `.env`. Prefer `PHENOML_CLIENT_ID` and
