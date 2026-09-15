@@ -141,9 +141,7 @@ def test_search_fhir_count_injects_summary_and_reports_total() -> None:
 
     result = search_fhir(transport, "prov", "MedicationRequest", {"code": "x"}, count=True)
 
-    assert transport.searches == [
-        ("prov", "MedicationRequest", {"code": "x", "_summary": "count"})
-    ]
+    assert transport.searches == [("prov", "MedicationRequest", {"code": "x", "_summary": "count"})]
     assert result.items == [{"total": 7}]
     assert "7" in result.message
 

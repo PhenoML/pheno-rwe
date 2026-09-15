@@ -289,9 +289,7 @@ class DiscoveryCliTransport:
     def resolve_codings(self, text: str, domain: str | None = None) -> dict[str, Any]:
         del text, domain
         return {
-            "codings": [
-                {"system": "http://snomed.info/sct", "code": "44054006", "display": "T2DM"}
-            ]
+            "codings": [{"system": "http://snomed.info/sct", "code": "44054006", "display": "T2DM"}]
         }
 
     def crosswalk(self, system: str, code: str, targets: Any) -> dict[str, Any]:

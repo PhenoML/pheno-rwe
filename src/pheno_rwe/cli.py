@@ -217,9 +217,7 @@ def ingest(
 @app.command()
 def pull(
     ctx: typer.Context,
-    cohort: str | None = typer.Option(
-        None, "--cohort", help="Natural-language cohort definition."
-    ),
+    cohort: str | None = typer.Option(None, "--cohort", help="Natural-language cohort definition."),
     patients: Annotated[
         Path | None,
         typer.Option(
@@ -266,9 +264,7 @@ def pull(
             text = f"explicit:{patients}"
         else:
             assert cohort is not None
-            preview = preview_live_cohort(
-                transport, cohort, provider_id, queries_only=queries_only
-            )
+            preview = preview_live_cohort(transport, cohort, provider_id, queries_only=queries_only)
             text = cohort
             if queries_only:
                 _render(
