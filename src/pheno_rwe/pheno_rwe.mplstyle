@@ -1,0 +1,30 @@
+# pheno-rwe publication style. Palette is color-vision-safe (Okabe-Ito).
+figure.figsize: 7.2, 4.6
+figure.facecolor: white
+figure.dpi: 100
+savefig.facecolor: white
+savefig.dpi: 300
+font.family: sans-serif
+font.sans-serif: DejaVu Sans
+font.size: 9
+axes.titlesize: 12
+axes.titleweight: bold
+axes.labelsize: 9
+axes.facecolor: white
+axes.edgecolor: 333333
+axes.linewidth: 0.8
+axes.spines.top: False
+axes.spines.right: False
+axes.prop_cycle: cycler('color', ['0072B2', 'D55E00', '009E73', 'CC79A7', 'E69F00', '56B4E9', '000000'])
+xtick.labelsize: 8
+ytick.labelsize: 8
+xtick.color: 333333
+ytick.color: 333333
+grid.color: D9D9D9
+grid.linewidth: 0.6
+legend.fontsize: 8
+legend.frameon: False
+lines.linewidth: 1.6
+lines.markersize: 5
+svg.fonttype: none
+pdf.fonttype: 42
